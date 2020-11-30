@@ -180,8 +180,6 @@ namespace Umbraco.Web
             return Attempt.If(reason == EnsureRoutableOutcome.IsRoutable, reason);
         }
 
-        
-
         private bool EnsureRuntime(HttpContextBase httpContext, Uri uri)
         {
             var level = _runtime.Level;
@@ -203,6 +201,13 @@ namespace Umbraco.Web
 
                 case RuntimeLevel.Install:
                 case RuntimeLevel.Upgrade:
+                    // an unattended install is in progress and the application is restarting
+                    if (_runtime.Reason == RuntimeLevelReason.InstallEmptyDatabase && Equals(httpContext.Application["UmbracoRestartRequired"], true))
+                    {
+                        UmbracoApplication.Restart(httpContext);
+                        return false;
+                    }
+
                     // redirect to install
                     ReportRuntime(level, "Umbraco must install or upgrade.");
                     var installPath = UriUtility.ToAbsolute(SystemDirectories.Install);
